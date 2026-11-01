@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A quick view of contributor projects, health, and upcoming work.">
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="dashboard-header">
+        <p class="eyebrow">Contributor workspace</p>
+        <h1>Project Pulse</h1>
+        <p class="purpose">A quick view of contributor projects, health, and upcoming work.</p>
+        <p id="project-count" class="project-count">Loading projects…</p>
+      </header>
+
+      <section class="health-summary" aria-labelledby="health-summary-heading">
+        <h2 id="health-summary-heading">Project health</h2>
+        <ul id="health-summary-list" class="health-summary-list" role="list">
+          <li><span class="summary-icon" aria-hidden="true">●</span><span>Healthy</span><strong>—</strong></li>
+          <li><span class="summary-icon" aria-hidden="true">!</span><span>Needs attention</span><strong>—</strong></li>
+          <li><span class="summary-icon" aria-hidden="true">▲</span><span>At risk</span><strong>—</strong></li>
+          <li><span class="summary-icon" aria-hidden="true">◷</span><span>Milestones this week</span><strong>—</strong></li>
+        </ul>
+      </section>
+
+      <section id="projects-section" class="projects-section" aria-labelledby="projects-heading">
+        <h2 id="projects-heading">Active projects</h2>
+        <p id="project-status" class="visually-hidden" aria-live="polite"></p>
+        <div id="projects-region" aria-busy="true">
+          <p class="loading-message">Loading projects…</p>
+          <ul class="project-grid loading-state" role="list" aria-hidden="true">
+            <li class="skeleton-card"></li>
+            <li class="skeleton-card"></li>
+            <li class="skeleton-card"></li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const controlledValues = {
+          status: new Set(["active", "paused", "complete"]),
+          health: new Set(["on-track", "attention", "at-risk"]),
+          priority: new Set(["low", "medium", "high", "blocked"])
+        };
+        const healthLabels = {
+          "on-track": "On track",
+          attention: "Needs attention",
+          "at-risk": "At risk"
+        };
+        const statusLabels = { active: "Active", paused: "Paused", complete: "Complete" };
+        const priorityLabels = {
+          low: "Priority: Low",
+          medium: "Priority: Medium",
+          high: "Priority: High",
+          blocked: "Risk: Blocked"
+        };
+        const region = document.getElementById("projects-region");
+        const announcement = document.getElementById("project-status");
+        const count = document.getElementById("project-count");
+        const summaryList = document.getElementById("health-summary-list");
+        const projectsHeading = document.getElementById("projects-heading");
+        const dateFormatter = new Intl.DateTimeFormat("en-US", {
+          month: "short", day: "numeric", year: "numeric", timeZone: "UTC"
+        });
+
+        function safeText(value, fallback, limit = 240) {
+          if (typeof value !== "string") return fallback;
+          const trimmed = value.trim().replace(/\s+/g, " ");
+          return trimmed ? trimmed.slice(0, limit) : fallback;
+        }
+
+        function safeDate(value) {
+          if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+          const [year, month, day] = value.split("-").map(Number);
+          const date = new Date(Date.UTC(year, month - 1, day));
+          return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+            ? value
+            : null;
+        }
+
+        function normalizedValue(value, allowed) {
+          const normalized = safeText(value, "", 30).toLowerCase().replace(/\s+/g, "-");
+          return allowed.has(normalized) ? normalized : null;
+        }
+
+        function normalizeProject(project, index) {
+          if (!project || typeof project !== "object" || Array.isArray(project)) return null;
+          const activity = project.recentActivity && typeof project.recentActivity === "object" ? project.recentActivity : {};
+          const milestone = project.nextMilestone && typeof project.nextMilestone === "object" ? project.nextMilestone : {};
+          const progress = Number(project.progress);
+          return {
+            name: safeText(project.name, `Untitled project ${index + 1}`, 120),
+            owner: safeText(project.owner, "Owner not reported", 100),
+            status: normalizedValue(project.status, controlledValues.status) || "active",
+            summary: safeText(project.summary, "No project summary has been reported.", 360),
+            health: normalizedValue(project.health, controlledValues.health),
+            progress: Number.isFinite(progress) && progress >= 0 && progress <= 100 ? Math.round(progress) : null,
+            activityText: safeText(activity.text || project.recentActivity, "No recent activity reported.", 240),
+            activityDate: safeDate(activity.date),
+            priority: normalizedValue(project.priority, controlledValues.priority),
+            milestoneName: safeText(milestone.name, "No upcoming milestone", 180),
+            milestoneDate: safeDate(milestone.date)
+          };
+        }
+
+        function element(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        }
+
+        function addDate(parent, date) {
+          if (date) {
+            const time = element("time", "", dateFormatter.format(new Date(`${date}T00:00:00Z`)));
+            time.dateTime = date;
+            parent.append(time);
+          }
+        }
+
+        function isThisWeek(dateString) {
+          if (!dateString) return false;
+          const now = new Date();
+          const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+          const end = new Date(start);
+          end.setUTCDate(start.getUTCDate() + 7);
+          const date = new Date(`${dateString}T00:00:00Z`);
+          return date >= start && date <= end;
+        }
+
+        function renderSummary(projects) {
+          const totals = [
+            ["●", "Healthy", projects.filter((project) => project.health === "on-track").length],
+            ["!", "Needs attention", projects.filter((project) => project.health === "attention").length],
+            ["▲", "At risk", projects.filter((project) => project.health === "at-risk").length],
+            ["◷", "Milestones this week", projects.filter((project) => isThisWeek(project.milestoneDate)).length]
+          ];
+          summaryList.replaceChildren();
+          totals.forEach(([icon, label, total]) => {
+            const item = element("li");
+            item.append(element("span", "summary-icon", icon), element("span", "", label), element("strong", "", String(total)));
+            item.querySelector(".summary-icon").setAttribute("aria-hidden", "true");
+            summaryList.append(item);
+          });
+        }
+
+        function renderCard(project) {
+          const listItem = element("li");
+          const card = element("article", "project-card");
+          const cardHeader = element("header", "card-header");
+          cardHeader.append(element("h3", "", project.name), element("span", `status-badge status--${project.status}`, statusLabels[project.status]));
+          card.append(cardHeader, element("p", "project-summary", project.summary));
+
+          const progressSection = element("section", "progress-section");
+          const healthText = project.health ? `Health: ${healthLabels[project.health]}` : "Health not reported";
+          progressSection.append(element("p", `health${project.health ? ` health--${project.health}` : ""}`, healthText));
+          if (project.progress === null) {
+            progressSection.append(element("p", "progress-unavailable", "Progress not reported"));
+          } else {
+            const progressLine = element("div", "progress-line");
+            const progress = element("progress", `progress${project.health ? ` health--${project.health}` : ""}`);
+            progress.value = project.progress;
+            progress.max = 100;
+            progress.setAttribute("aria-label", `${project.name}: ${project.progress}% complete`);
+            progressLine.append(progress, element("span", "", `${project.progress}% complete`));
+            progressSection.append(progressLine);
+          }
+          card.append(progressSection);
+
+          const meta = element("dl", "project-meta");
+          const ownerTerm = element("dt", "", "Owner");
+          const ownerDescription = element("dd");
+          ownerDescription.append(element("span", "owner-avatar", project.owner.charAt(0).toUpperCase()), document.createTextNode(project.owner));
+          const activityTerm = element("dt", "", "Latest activity");
+          const activityDescription = element("dd", "", project.activityText);
+          if (project.activityDate) {
+            activityDescription.append(document.createTextNode(" · "));
+            addDate(activityDescription, project.activityDate);
+          }
+          meta.append(ownerTerm, ownerDescription, activityTerm, activityDescription);
+          card.append(meta);
+
+          card.append(element("p", `priority-badge${project.priority ? ` priority--${project.priority}` : ""}`, project.priority ? priorityLabels[project.priority] : "Priority not reported"));
+
+          const milestone = element("footer", "milestone");
+          const milestoneLabel = element("p", "milestone-label");
+          milestoneLabel.append(element("span", "calendar-icon", "◷"), document.createTextNode("Next milestone"));
+          milestoneLabel.querySelector(".calendar-icon").setAttribute("aria-hidden", "true");
+          milestone.append(milestoneLabel, element("p", "milestone-name", project.milestoneName));
+          if (project.milestoneDate) addDate(milestone, project.milestoneDate);
+          card.append(milestone);
+          listItem.append(card);
+          return listItem;
+        }
+
+        function renderProjects(projects) {
+          region.replaceChildren();
+          region.setAttribute("aria-busy", "false");
+          projectsHeading.textContent = "Active projects";
+          const grid = element("ul", "project-grid");
+          grid.setAttribute("role", "list");
+          projects.forEach((project) => grid.append(renderCard(project)));
+          region.append(grid);
+        }
+
+        function renderEmpty() {
+          region.replaceChildren();
+          region.setAttribute("aria-busy", "false");
+          projectsHeading.textContent = "No active projects yet.";
+          region.append(element("p", "empty-state", "Projects will appear here when they are added."));
+          count.textContent = "0 active projects";
+          announcement.textContent = "No active projects yet.";
+          renderSummary([]);
+        }
+
+        function renderError() {
+          region.replaceChildren();
+          region.setAttribute("aria-busy", "false");
+          const error = element("p", "error-state", "Projects could not be loaded. Refresh the page to try again.");
+          error.setAttribute("role", "alert");
+          region.append(error);
+          count.textContent = "Projects unavailable";
+          announcement.textContent = "Projects could not be loaded.";
+        }
+
+        async function loadProjects() {
+          try {
+            const response = await fetch("project-data.json", { headers: { Accept: "application/json" } });
+            if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+            const data = await response.json();
+            if (!data || !Array.isArray(data.projects)) throw new Error("Project data does not contain a projects array");
+            const projects = data.projects.map(normalizeProject).filter(Boolean);
+            if (!projects.length) return renderEmpty();
+            renderSummary(projects);
+            renderProjects(projects);
+            count.textContent = `${projects.length} active project${projects.length === 1 ? "" : "s"}`;
+            announcement.textContent = `${projects.length} projects loaded.`;
+          } catch (error) {
+            console.error("Unable to load Project Pulse data:", error);
+            renderError();
+          }
+        }
+
+        loadProjects();
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,106 @@
+{
+  "projects": [
+    {
+      "name": "Contributor Onboarding",
+      "owner": "Maya Chen",
+      "status": "active",
+      "summary": "Streamline first contributions with clearer setup guidance, starter issues, and mentor handoffs.",
+      "health": "on-track",
+      "progress": 72,
+      "recentActivity": {
+        "text": "Reviewed the new first-contribution checklist",
+        "date": "2026-11-01"
+      },
+      "priority": "high",
+      "nextMilestone": {
+        "name": "Publish onboarding checklist",
+        "date": "2026-11-04"
+      }
+    },
+    {
+      "name": "Release Automation",
+      "owner": "Jon Bell",
+      "status": "active",
+      "summary": "Make routine releases predictable by validating artifacts and publishing release notes automatically.",
+      "health": "on-track",
+      "progress": 68,
+      "recentActivity": {
+        "text": "Added package verification to the release workflow",
+        "date": "2026-10-30"
+      },
+      "priority": "medium",
+      "nextMilestone": {
+        "name": "Run the first automated release",
+        "date": "2026-11-06"
+      }
+    },
+    {
+      "name": "Accessibility Review",
+      "owner": "Priya Nair",
+      "status": "active",
+      "summary": "Resolve keyboard, contrast, and screen-reader issues across contributor-facing documentation.",
+      "health": "attention",
+      "progress": 45,
+      "recentActivity": {
+        "text": "Logged contrast findings from the documentation audit",
+        "date": "2026-10-31"
+      },
+      "priority": "high",
+      "nextMilestone": {
+        "name": "Complete keyboard navigation fixes",
+        "date": "2026-11-05"
+      }
+    },
+    {
+      "name": "Dependency Refresh",
+      "owner": "Leo Martins",
+      "status": "active",
+      "summary": "Update supported dependencies while documenting upgrade paths for downstream maintainers.",
+      "health": "at-risk",
+      "progress": 31,
+      "recentActivity": {
+        "text": "Identified a breaking change in the build toolchain",
+        "date": "2026-10-29"
+      },
+      "priority": "blocked",
+      "nextMilestone": {
+        "name": "Resolve build toolchain compatibility",
+        "date": "2026-11-03"
+      }
+    },
+    {
+      "name": "Community Metrics",
+      "owner": "Aisha Rahman",
+      "status": "active",
+      "summary": "Create a privacy-conscious monthly view of contributor growth, response time, and retention.",
+      "health": "on-track",
+      "progress": 84,
+      "recentActivity": {
+        "text": "Shared the draft metrics glossary with maintainers",
+        "date": "2026-10-28"
+      },
+      "priority": "low",
+      "nextMilestone": {
+        "name": "Review the November community report",
+        "date": "2026-11-07"
+      }
+    },
+    {
+      "name": "Documentation Refresh",
+      "owner": "Owen Park",
+      "status": "active",
+      "summary": "Refresh contributor guides so common project tasks have concise, current examples.",
+      "health": "attention",
+      "progress": 56,
+      "recentActivity": {
+        "text": "Consolidated duplicated setup instructions",
+        "date": "2026-10-27"
+      },
+      "priority": "medium",
+      "nextMilestone": {
+        "name": "Publish the revised contribution guide",
+        "date": "2026-11-08"
+      }
+    }
+  ]
+}
