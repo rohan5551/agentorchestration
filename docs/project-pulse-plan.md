@@ -38,6 +38,7 @@ Build a lightweight static Project Pulse dashboard for contributors. It must pre
 2. **Coder — project content**
    - File: `app/project-data.json`
    - Add several representative projects with all required fields and concise `summary` values.
+   - Use the Designer-defined status and priority/risk vocabulary exactly for every project so data values map consistently to the dashboard’s labels and visual variants.
    - Dependency: Designer’s content hierarchy and controlled status/priority vocabulary.
 
 3. **Coder — dashboard markup and rendering**
