@@ -33,6 +33,13 @@ These are the specialist agents you can call:
 - Summarize progress after each phase.
 - Surface blockers instead of hiding them.
 
+## Handoff record
+After every task you delegate, append an entry to docs/handoff.md with:
+- which agent did the work
+- the files it created or changed
+- decisions made and why
+- what the next agent should do
+
 ## Git control
 
 - Do not stage, commit, or push changes. The learner controls all git operations through Copilot CLI prompts.
